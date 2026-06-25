@@ -486,7 +486,7 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
           <div class="srow">
             <button class="sbtn pri" onclick="saveSyncUrl()"><i class="ti ti-check"></i>Save URL</button>
             <button class="sbtn" onclick="clearSyncUrl()"><i class="ti ti-x"></i>Turn Off</button>
-            <button class="sbtn" onclick="fetchSheet()"><i class="ti ti-refresh"></i>Sync Now</button>
+            <button class="sbtn" onclick="fetchSheetFromSettings()"><i class="ti ti-refresh"></i>Sync Now</button>
           </div>
           <div class="sync-status" id="syncStatus"></div>
         </div>
@@ -1305,6 +1305,32 @@ async function fetchSheet(){
     banner(`<i class="ti ti-circle-check"></i> Synced! Last updated: ${t}`,"success");
     setTimeout(()=>banner("","hidden"),4000);
   }catch(e){banner('<i class="ti ti-alert-circle"></i> Sync failed. Check your Apps Script URL.',"error");}
+}
+
+function fetchSheetFromSettings(){
+  // show result in settings status
+  if(!S.settings.syncUrl){
+    const e=$("syncStatus");
+    e.textContent="⚠️ No sync URL yet. Save a URL first.";
+    e.className="sync-status err";
+    return;
+  }
+  const e=$("syncStatus");
+  e.textContent="⏳ Syncing...";
+  e.className="sync-status";
+  fetchSheet().then(()=>{
+    // check if banner has success
+    setTimeout(()=>{
+      const banner=$("fetchBanner");
+      if(banner&&banner.className.includes("success")){
+        e.textContent="✓ Sync successful!";
+        e.className="sync-status ok";
+      } else if(banner&&banner.className.includes("error")){
+        e.textContent="❌ Sync failed. Check URL or redeploy Apps Script.";
+        e.className="sync-status err";
+      }
+    },3000);
+  });
 }
 
 function saveSyncUrl(){
