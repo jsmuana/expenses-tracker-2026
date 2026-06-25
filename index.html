@@ -1268,7 +1268,9 @@ async function fetchSheet(){
   if(!S.settings.syncUrl){banner('<i class="ti ti-alert-circle"></i> No sync URL. Add it in Settings first.',"error");return;}
   banner('<span class="spin">↻</span> Syncing from Google Sheets...',"loading");
   try{
-    const res=await fetch(S.settings.syncUrl);
+    // Use URL with cache-busting to avoid CORS preflight
+    const url=S.settings.syncUrl+(S.settings.syncUrl.includes('?')?'&':'?')+'t='+Date.now();
+    const res=await fetch(url,{method:'GET',mode:'cors',credentials:'omit'});
     const json=await res.json();
     if(json.transactions&&Array.isArray(json.transactions)){
       const local=S.transactions.filter(t=>!t.source||t.source==="local");
