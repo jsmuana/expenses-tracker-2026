@@ -199,6 +199,24 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#f87171;flex-shrink:0}
 .sync-dot.on{background:#4ade80}
 
+/* CALCULATOR */
+.calc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.calc-overlay.hidden{display:none}
+.calc-box{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:16px;padding-bottom:calc(16px + var(--safe-bottom))}
+.calc-display{background:var(--hero);border-radius:12px;padding:16px 20px;margin-bottom:14px;text-align:right}
+.calc-expr{font-size:13px;color:rgba(255,255,255,.5);min-height:18px;font-weight:600;margin-bottom:4px}
+.calc-val{font-size:36px;font-weight:900;color:#fff;letter-spacing:.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.calc-btn{height:60px;border-radius:12px;font-size:20px;font-weight:700;border:none;cursor:pointer;transition:opacity .1s;display:grid;place-items:center}
+.calc-btn:active{opacity:.7;transform:scale(.96)}
+.calc-btn.num{background:var(--surface2);color:var(--text)}
+.calc-btn.op{background:#e8f4ed;color:var(--accent)}
+.calc-btn.del{background:#fdf0ef;color:var(--red)}
+.calc-btn.eq{background:var(--accent);color:#fff}
+.calc-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.calc-cancel{height:52px;border-radius:12px;background:var(--surface2);color:var(--muted);font-size:15px;font-weight:700;border:none;cursor:pointer}
+.calc-ok{height:52px;border-radius:12px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer}
+
 /* SWIPE ACTIONS */
 .tx-item{position:relative;overflow:hidden;transition:transform .25s ease}
 .tx-swipe-actions{position:absolute;right:0;top:0;height:100%;display:flex;align-items:stretch;transform:translateX(100%);transition:transform .25s ease}
@@ -326,7 +344,7 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
         </div>
         <div class="form-group">
           <label class="form-label">Amount (PHP)</label>
-          <input class="form-input big" type="number" id="entryAmount" placeholder="0.00" min="0" step="0.01">
+          <input class="form-input big" type="number" id="entryAmount" placeholder="0.00" min="0" step="0.01" readonly onclick="openCalc('entryAmount')" style="cursor:pointer">
         </div>
         <div class="form-group" id="categoryGroup">
           <label class="form-label">Category</label>
@@ -526,6 +544,43 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
     <div class="bnav-item" data-nav="goals"><i class="ti ti-target"></i>Goals</div>
     <div class="bnav-item" data-nav="settings"><i class="ti ti-settings"></i>Settings</div>
   </nav>
+<!-- CALCULATOR -->
+<div class="calc-overlay hidden" id="calcOverlay" onclick="calcOverlayClick(event)">
+  <div class="calc-box" onclick="event.stopPropagation()">
+    <div class="calc-display">
+      <div class="calc-expr" id="calcExpr"></div>
+      <div class="calc-val" id="calcVal">0</div>
+    </div>
+    <div class="calc-grid">
+      <button class="calc-btn del" onclick="calcDel()">⌫</button>
+      <button class="calc-btn op" onclick="calcOp('÷')">÷</button>
+      <button class="calc-btn op" onclick="calcOp('×')">×</button>
+      <button class="calc-btn op" onclick="calcOp('-')">−</button>
+
+      <button class="calc-btn num" onclick="calcNum('7')">7</button>
+      <button class="calc-btn num" onclick="calcNum('8')">8</button>
+      <button class="calc-btn num" onclick="calcNum('9')">9</button>
+      <button class="calc-btn op" onclick="calcOp('+')">+</button>
+
+      <button class="calc-btn num" onclick="calcNum('4')">4</button>
+      <button class="calc-btn num" onclick="calcNum('5')">5</button>
+      <button class="calc-btn num" onclick="calcNum('6')">6</button>
+      <button class="calc-btn eq" onclick="calcEquals()" style="grid-row:span 2">＝</button>
+
+      <button class="calc-btn num" onclick="calcNum('1')">1</button>
+      <button class="calc-btn num" onclick="calcNum('2')">2</button>
+      <button class="calc-btn num" onclick="calcNum('3')">3</button>
+
+      <button class="calc-btn num" onclick="calcNum('0')" style="grid-column:span 2">0</button>
+      <button class="calc-btn num" onclick="calcNum('.')">.</button>
+    </div>
+    <div class="calc-actions">
+      <button class="calc-cancel" onclick="closeCalc()">✗ Cancel</button>
+      <button class="calc-ok" onclick="calcOK()">✓ OK</button>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -805,7 +860,7 @@ function renderGoals(){
       <div class="goal-meta"><span>${Math.round(pct)}% complete</span><span>${rem>0?php(rem)+" left":"✓ Done!"}${g.due?" · Due "+fdate(g.due):""}</span></div>
       ${lastPay?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:4px"><i class="ti ti-history" style="font-size:13px"></i> Last: <strong style="color:var(--accent);margin:0 3px">${php(lastPay.amount)}</strong> · ${fdate(lastPay.date)}</div>`:""}
       <div class="goal-pay-row">
-        <input class="goal-pay-input" type="number" placeholder="Amount..." id="pay-${g.id}" min="0" step="1" style="flex:1.2">
+        <input class="goal-pay-input" type="number" placeholder="Amount..." id="pay-${g.id}" min="0" step="1" style="flex:1.2;cursor:pointer" readonly onclick="openCalc('pay-${g.id}')">
         <input class="goal-pay-input" type="date" id="paydate-${g.id}" value="${today}" min="2020-01-01" max="2099-12-31" style="flex:1;font-size:12px;padding:0 8px">
         <button class="goal-pay-btn" onclick="addGoalPayment('${g.id}')"><i class="ti ti-check"></i> Pay</button>
       </div>
@@ -1305,6 +1360,83 @@ function renderAll(){
   renderTx();
   renderGoals();
   updateSyncInd();
+}
+
+// CALCULATOR
+let calcTarget=null;
+let calcCurrent="0";
+let calcExpr="";
+let calcHasOp=false;
+
+function openCalc(targetId){
+  calcTarget=targetId;
+  const current=$(targetId)?.value||"0";
+  calcCurrent=current!=="0"&&current!==""?current:"0";
+  calcExpr="";
+  calcHasOp=false;
+  $("calcVal").textContent=calcCurrent;
+  $("calcExpr").textContent="";
+  $("calcOverlay").classList.remove("hidden");
+}
+
+function closeCalc(){
+  $("calcOverlay").classList.add("hidden");
+  calcTarget=null;
+}
+
+function calcOverlayClick(e){
+  if(e.target===$("calcOverlay"))closeCalc();
+}
+
+function calcNum(n){
+  if(calcCurrent==="0"&&n!==".")calcCurrent=n;
+  else if(n==="."&&calcCurrent.includes("."))return;
+  else calcCurrent+=n;
+  $("calcVal").textContent=calcCurrent;
+}
+
+function calcOp(op){
+  calcExpr=calcCurrent+" "+op;
+  $("calcExpr").textContent=calcExpr;
+  calcCurrent="0";
+  calcHasOp=true;
+  $("calcVal").textContent="0";
+}
+
+function calcEquals(){
+  if(!calcHasOp)return;
+  try{
+    const expr=calcExpr.replace("÷","/").replace("×","*")+" "+calcCurrent;
+    const result=Function('"use strict";return ('+expr+')')();
+    const rounded=Math.round(result*100)/100;
+    calcCurrent=String(rounded);
+    $("calcVal").textContent=calcCurrent;
+    $("calcExpr").textContent=calcExpr+" "+calcCurrent+" =";
+    calcExpr="";
+    calcHasOp=false;
+  }catch(e){
+    $("calcVal").textContent="Error";
+    calcCurrent="0";
+  }
+}
+
+function calcDel(){
+  if(calcCurrent.length<=1||calcCurrent==="Error")calcCurrent="0";
+  else calcCurrent=calcCurrent.slice(0,-1);
+  $("calcVal").textContent=calcCurrent;
+}
+
+function calcOK(){
+  if(calcTarget){
+    const val=parseFloat(calcCurrent)||0;
+    const el=$(calcTarget);
+    if(el){
+      el.value=val;
+      // update display
+      el.style.color=val>0?"var(--text)":"var(--muted)";
+    }
+  }
+  closeCalc();
 }
 
 // SWIPE ACTIONS
