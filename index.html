@@ -199,6 +199,20 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#f87171;flex-shrink:0}
 .sync-dot.on{background:#4ade80}
 
+/* CUSTOM DROPDOWN */
+.custom-select-wrap{position:relative;width:100%}
+.custom-select-input{width:100%;height:50px;border:1.5px solid var(--border);border-radius:12px;padding:0 40px 0 16px;font-size:15px;font-weight:600;background:var(--surface);color:var(--text);cursor:pointer;outline:none;transition:border .15s;appearance:none;-webkit-appearance:none}
+.custom-select-input:focus{border-color:var(--accent)}
+.custom-select-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:18px}
+.custom-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--accent);border-radius:12px;z-index:150;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);display:none}
+.custom-dropdown.open{display:block}
+.custom-dropdown-search{padding:8px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.custom-dropdown-search input{width:100%;height:36px;border:1.5px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px;outline:none}
+.custom-dropdown-search input:focus{border-color:var(--accent)}
+.dropdown-item{padding:12px 16px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;transition:background .1s}
+.dropdown-item:hover,.dropdown-item.selected{background:var(--accent2);color:var(--accent)}
+.dropdown-item:active{background:var(--accent);color:#fff}
+
 /* CALCULATOR */
 .calc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
 .calc-overlay.hidden{display:none}
@@ -348,8 +362,16 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
         </div>
         <div class="form-group" id="categoryGroup">
           <label class="form-label">Category</label>
-          <input class="form-input" list="catList" id="entryCategory" placeholder="Food, Transpo, Grocery...">
-          <datalist id="catList"></datalist>
+          <div class="custom-select-wrap" id="catSelectWrap">
+            <input class="custom-select-input" id="entryCategory" placeholder="Tap to choose or type..." readonly onclick="toggleCatDropdown()" autocomplete="off">
+            <i class="ti ti-chevron-down custom-select-arrow" id="catArrow"></i>
+            <div class="custom-dropdown" id="catDropdown">
+              <div class="custom-dropdown-search">
+                <input type="text" id="catSearch" placeholder="Search category..." oninput="filterCatDropdown(this.value)">
+              </div>
+              <div id="catDropdownList"></div>
+            </div>
+          </div>
         </div>
         <div class="form-group" id="sourceGroup" style="display:none">
           <label class="form-label">Income Source</label>
@@ -1144,6 +1166,7 @@ function saveBudgetSetup(){
 function renderDataLists(){
   const cats=[...new Set([...S.categories,...BASE_CATS])].sort();S.categories=cats;
   $("catList").innerHTML=cats.map(c=>`<option value="${c}">`).join("");
+  if(catDropdownOpen)renderCatDropdownList($("catSearch")?.value||"");
   $("srcList").innerHTML=[...new Set([...S.incomeSources,...BASE_SRCS])].sort().map(s=>`<option value="${s}">`).join("");
   $("walletList").innerHTML=[...new Set([...S.wallets,...BASE_WALLETS])].sort().map(w=>`<option value="${w}">`).join("");
 }
@@ -1361,6 +1384,73 @@ function renderAll(){
   renderGoals();
   updateSyncInd();
 }
+
+// CUSTOM CATEGORY DROPDOWN
+let catDropdownOpen=false;
+
+function toggleCatDropdown(){
+  catDropdownOpen=!catDropdownOpen;
+  const dd=$("catDropdown");
+  const arrow=$("catArrow");
+  dd.classList.toggle("open",catDropdownOpen);
+  arrow.className=catDropdownOpen?"ti ti-chevron-up custom-select-arrow":"ti ti-chevron-down custom-select-arrow";
+  if(catDropdownOpen){
+    renderCatDropdownList("");
+    setTimeout(()=>$("catSearch")?.focus(),100);
+  }
+}
+
+function closeCatDropdown(){
+  catDropdownOpen=false;
+  $("catDropdown")?.classList.remove("open");
+  const arrow=$("catArrow");
+  if(arrow)arrow.className="ti ti-chevron-down custom-select-arrow";
+}
+
+function renderCatDropdownList(search=""){
+  const cats=[...new Set([...S.categories,...BASE_CATS])].sort();
+  const filtered=search?cats.filter(c=>c.toLowerCase().includes(search.toLowerCase())):cats;
+  const current=$("entryCategory")?.value||"";
+  const el=$("catDropdownList");
+  if(!el)return;
+
+  // Add "Create new" option if search doesn't match exactly
+  let createBtn="";
+  if(search&&!cats.find(c=>c.toLowerCase()===search.toLowerCase())){
+    createBtn=`<div class="dropdown-item" style="color:var(--accent);border-bottom:1px solid var(--border)" 
+      onclick="selectCatItem('${search.toUpperCase()}',true)">
+      <i class="ti ti-plus" style="font-size:13px"></i> Add "<strong>${search.toUpperCase()}</strong>"
+    </div>`;
+  }
+
+  el.innerHTML=createBtn+(filtered.length?filtered.map(c=>`
+    <div class="dropdown-item ${c===current?"selected":""}" onclick="selectCatItem('${c}')">
+      ${c}
+    </div>`).join(""):`<div style="padding:16px;text-align:center;font-size:13px;color:var(--muted)">No categories found.</div>`);
+}
+
+function filterCatDropdown(val){
+  renderCatDropdownList(val);
+}
+
+function selectCatItem(cat, isNew=false){
+  const input=$("entryCategory");
+  if(input)input.value=cat;
+  if(isNew){
+    // add to categories
+    if(!S.categories.includes(cat))S.categories=[...S.categories,cat].sort();
+    persist();renderDataLists();
+  }
+  closeCatDropdown();
+  $("catSearch").value="";
+}
+
+// close dropdown on tap outside
+document.addEventListener("click", e=>{
+  if(catDropdownOpen&&!e.target.closest("#catSelectWrap")){
+    closeCatDropdown();
+  }
+});
 
 // CALCULATOR
 let calcTarget=null;
