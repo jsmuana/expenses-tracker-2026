@@ -94,7 +94,7 @@ img{display:block}
 /* CHART CONTAINERS */
 .chart-wrap{position:relative;width:100%}
 .donut-wrap{display:flex;flex-direction:column;align-items:center;gap:16px}
-.donut-canvas{width:200px!important;height:200px!important}
+.donut-canvas{width:200px!important;height:200px!important;display:block!important;margin:0 auto!important}
 .chart-legend{width:100%;display:flex;flex-direction:column;gap:6px}
 .legend-item{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .legend-left{display:flex;align-items:center;gap:8px}
@@ -314,8 +314,8 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
         </div>
         <div class="card">
           <div class="donut-wrap">
-            <div style="width:200px;height:200px;position:relative;margin:0 auto">
-              <canvas id="donutChart" style="position:absolute;top:0;left:0;width:200px!important;height:200px!important"></canvas>
+            <div style="width:200px;height:200px;position:relative;margin:0 auto;flex-shrink:0">
+              <canvas id="donutChart" style="position:absolute;inset:0;width:200px!important;height:200px!important"></canvas>
             </div>
             <div class="chart-legend" id="donutLegend"></div>
           </div>
@@ -723,7 +723,7 @@ function renderDonutChart(ownerFilter="all"){
   const total=data.reduce((s,v)=>s+v,0);
   const ctx=$("donutChart").getContext("2d");
   if(donutChartInst){donutChartInst.destroy();}
-  donutChartInst=new Chart(ctx,{type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:"#fff",hoverOffset:6}]},options:{responsive:false,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: PHP ${new Intl.NumberFormat("en-PH").format(c.raw)} (${Math.round(c.raw/total*100)}%)`}}}}});
+  donutChartInst=new Chart(ctx,{type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:"#fff",hoverOffset:6}]},options:{responsive:false,maintainAspectRatio:true,aspectRatio:1,cutout:"62%",plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: PHP ${new Intl.NumberFormat("en-PH").format(c.raw)} (${Math.round(c.raw/total*100)}%)`}}}}});
   $("donutLegend").innerHTML=sorted.map(([cat,amt],i)=>`<div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:${colors[i]}"></div><span class="legend-label">${cat}</span></div><span class="legend-amount">${php(amt)} <span style="color:var(--muted);font-weight:600;font-size:11px">${Math.round(amt/total*100)}%</span></span></div>`).join("");
 }
 
