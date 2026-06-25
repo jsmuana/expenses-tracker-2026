@@ -199,6 +199,12 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#f87171;flex-shrink:0}
 .sync-dot.on{background:#4ade80}
 
+/* TOAST NOTIFICATION */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:#1a6b3c;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;z-index:999;transition:transform .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--red)}
+.toast.warning{background:var(--warn)}
+
 /* CUSTOM DROPDOWN */
 .custom-select-wrap{position:relative;width:100%}
 .custom-select-input{width:100%;height:50px;border:1.5px solid var(--border);border-radius:12px;padding:0 40px 0 16px;font-size:15px;font-weight:600;background:var(--surface);color:var(--text);cursor:pointer;outline:none;transition:border .15s;appearance:none;-webkit-appearance:none}
@@ -566,6 +572,9 @@ textarea.form-input{height:80px;padding:12px 16px;resize:none}
     <div class="bnav-item" data-nav="goals"><i class="ti ti-target"></i>Goals</div>
     <div class="bnav-item" data-nav="settings"><i class="ti ti-settings"></i>Settings</div>
   </nav>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <!-- CALCULATOR -->
 <div class="calc-overlay hidden" id="calcOverlay" onclick="calcOverlayClick(event)">
   <div class="calc-box" onclick="event.stopPropagation()">
@@ -1290,6 +1299,13 @@ async function fetchWithJSONP(url){
   }
 }
 
+function showToast(msg, type="success"){
+  const el=$("toast");
+  el.innerHTML=`<i class="ti ti-${type==="success"?"circle-check":type==="error"?"alert-circle":"info-circle"}"></i>${msg}`;
+  el.className=`toast ${type} show`;
+  setTimeout(()=>{el.classList.remove("show");},3000);
+}
+
 async function fetchSheet(){
   if(!S.settings.syncUrl){banner('<i class="ti ti-alert-circle"></i> No sync URL. Add it in Settings first.',"error");return;}
   banner('<span class="spin">↻</span> Syncing from Google Sheets...',"loading");
@@ -1326,47 +1342,25 @@ async function fetchSheet(){
     }
     S.lastFetched=new Date().toISOString();persist();renderAll();
     const t=new Date(S.lastFetched).toLocaleTimeString("en-PH");
-    banner(`<i class="ti ti-circle-check"></i> Synced! Last updated: ${t}`,"success");
-    setTimeout(()=>banner("","hidden"),4000);
+    banner("","hidden");
+    showToast("✓ Synced! "+t,"success");
   }catch(e){
-    // Don't show error if we have cached data
+    banner("","hidden");
     if(S.transactions.length>0){
-      banner('<i class="ti ti-circle-check"></i> Using cached data. Pull to sync when online.',"success");
-      setTimeout(()=>banner("","hidden"),3000);
+      showToast("Using cached data","warning");
     } else {
-      banner('<i class="ti ti-alert-circle"></i> Sync failed. Check your Apps Script URL.',"error");
+      showToast("Sync failed. Check URL.","error");
     }
   }
 }
 
 function fetchSheetFromSettings(){
-  // show result in settings status
   if(!S.settings.syncUrl){
-    const e=$("syncStatus");
-    e.textContent="⚠️ No sync URL yet. Save a URL first.";
-    e.className="sync-status err";
+    showToast("No sync URL yet. Save a URL first.","error");
     return;
   }
-  const e=$("syncStatus");
-  e.textContent="⏳ Syncing...";
-  e.className="sync-status";
-  fetchSheet().then(()=>{
-    // check if banner has success
-    setTimeout(()=>{
-      const banner=$("fetchBanner");
-      if(banner&&banner.className.includes("success")){
-        e.textContent="✓ Sync successful!";
-        e.className="sync-status ok";
-        // hide banner after success
-        banner.className="banner hidden";
-      } else if(banner&&banner.className.includes("error")){
-        // hide error banner - data loads from localStorage
-        banner.className="banner hidden";
-        e.textContent="✓ Using cached data.";
-        e.className="sync-status ok";
-      }
-    },3000);
-  });
+  showToast("Syncing...","warning");
+  fetchSheet();
 }
 
 function saveSyncUrl(){
