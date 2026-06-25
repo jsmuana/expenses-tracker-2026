@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/sync.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/sync",
+      "destination": "/api/sync.js"
+    }
+  ]
+}
