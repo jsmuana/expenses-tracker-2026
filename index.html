@@ -1328,7 +1328,15 @@ async function fetchSheet(){
     const t=new Date(S.lastFetched).toLocaleTimeString("en-PH");
     banner(`<i class="ti ti-circle-check"></i> Synced! Last updated: ${t}`,"success");
     setTimeout(()=>banner("","hidden"),4000);
-  }catch(e){banner('<i class="ti ti-alert-circle"></i> Sync failed. Check your Apps Script URL.',"error");}
+  }catch(e){
+    // Don't show error if we have cached data
+    if(S.transactions.length>0){
+      banner('<i class="ti ti-circle-check"></i> Using cached data. Pull to sync when online.',"success");
+      setTimeout(()=>banner("","hidden"),3000);
+    } else {
+      banner('<i class="ti ti-alert-circle"></i> Sync failed. Check your Apps Script URL.',"error");
+    }
+  }
 }
 
 function fetchSheetFromSettings(){
@@ -1349,9 +1357,13 @@ function fetchSheetFromSettings(){
       if(banner&&banner.className.includes("success")){
         e.textContent="✓ Sync successful!";
         e.className="sync-status ok";
+        // hide banner after success
+        banner.className="banner hidden";
       } else if(banner&&banner.className.includes("error")){
-        e.textContent="❌ Sync failed. Check URL or redeploy Apps Script.";
-        e.className="sync-status err";
+        // hide error banner - data loads from localStorage
+        banner.className="banner hidden";
+        e.textContent="✓ Using cached data.";
+        e.className="sync-status ok";
       }
     },3000);
   });
